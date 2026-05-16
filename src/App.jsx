@@ -363,7 +363,6 @@ export default function App() {
                 <Stat label="정확도" value={`${summary.accuracy}%`} />
                 <Stat label="성공" value={stats.correct} />
                 <Stat label="놓침" value={stats.misses} />
-                <Stat label="조기 클릭" value={stats.earlyClicks} />
               </div>
             </Panel>
 
