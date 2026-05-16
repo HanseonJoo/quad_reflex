@@ -1,34 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const DIFFICULTIES = {
-  easy: {
-    label: 'Easy',
-    description: '느리게 점등 · 입문용',
-    flashMs: 1100,
-    gapMs: 360,
-    redRate: 0.22,
-  },
-  normal: {
-    label: 'Normal',
-    description: '기본 속도 · 추천',
-    flashMs: 850,
-    gapMs: 300,
-    redRate: 0.28,
-  },
-  hard: {
-    label: 'Hard',
-    description: '빠른 점등 · 실전용',
-    flashMs: 620,
-    gapMs: 230,
-    redRate: 0.33,
-  },
-  pro: {
-    label: 'Pro',
-    description: '매우 빠름 · 고수용',
-    flashMs: 470,
-    gapMs: 190,
-    redRate: 0.38,
-  },
+  easy: { label: 'Easy', description: '느리게 점등 · 입문용', flashMs: 1100, gapMs: 360, redRate: 0.22 },
+  normal: { label: 'Normal', description: '기본 속도 · 추천', flashMs: 850, gapMs: 300, redRate: 0.28 },
+  hard: { label: 'Hard', description: '빠른 점등 · 실전용', flashMs: 620, gapMs: 230, redRate: 0.33 },
+  pro: { label: 'Pro', description: '매우 빠름 · 고수용', flashMs: 470, gapMs: 190, redRate: 0.38 },
 }
 
 const ROUND_OPTIONS = [10, 20, 30]
@@ -73,7 +49,6 @@ export default function App() {
   const [active, setActive] = useState(null)
   const [message, setMessage] = useState('파란 칸만 누르고, 빨간 칸은 참으세요.')
   const [bestScores, setBestScores] = useState(loadBestScores)
-
   const [stats, setStats] = useState({
     correct: 0,
     misses: 0,
@@ -87,6 +62,7 @@ export default function App() {
   const showTimerRef = useRef(null)
   const expireTimerRef = useRef(null)
   const tokenRef = useRef(null)
+  const redStreakRef = useRef(0)
 
   const settings = DIFFICULTIES[difficulty]
   const recordKey = `${difficulty}-${roundCount}`
@@ -106,12 +82,7 @@ export default function App() {
         Math.max(0, Math.round((avgReaction - 300) / 8))
     )
 
-    const grade = getGrade(
-      score,
-      avgReaction,
-      stats.misses + stats.falseClicks,
-      roundCount
-    )
+    const grade = getGrade(score, avgReaction, stats.misses + stats.falseClicks, roundCount)
 
     return {
       attempts,
@@ -143,6 +114,7 @@ export default function App() {
   function startGame() {
     clearTimers()
     tokenRef.current = null
+    redStreakRef.current = 0
     setActive(null)
     resetStats()
     setRound(0)
@@ -153,6 +125,7 @@ export default function App() {
   function finishGame() {
     clearTimers()
     tokenRef.current = null
+    redStreakRef.current = 0
     setActive(null)
     setPhase('finished')
     setMessage('테스트 완료. 결과를 확인하세요.')
@@ -168,18 +141,24 @@ export default function App() {
 
     showTimerRef.current = setTimeout(() => {
       const cell = Math.floor(Math.random() * 16)
-      const color = Math.random() < settings.redRate ? 'red' : 'blue'
+
+      const shouldShowRed =
+        redStreakRef.current < 3 && Math.random() < settings.redRate
+
+      const color = shouldShowRed ? 'red' : 'blue'
+
+      if (color === 'red') {
+        redStreakRef.current += 1
+      } else {
+        redStreakRef.current = 0
+      }
+
       const token = `${round}-${Date.now()}-${Math.random()}`
       const litAt = performance.now()
 
       tokenRef.current = token
       setActive({ cell, color, litAt, token })
-
-      setMessage(
-        color === 'blue'
-          ? '파란색! 해당 칸을 누르세요.'
-          : '빨간색! 누르면 감점입니다.'
-      )
+      setMessage(color === 'blue' ? '파란색! 해당 칸을 누르세요.' : '빨간색! 누르면 감점입니다.')
 
       expireTimerRef.current = setTimeout(() => {
         if (tokenRef.current !== token) return
@@ -187,38 +166,22 @@ export default function App() {
         tokenRef.current = null
         setActive(null)
 
+        setStats(prev =>
+          color === 'blue'
+            ? { ...prev, misses: prev.misses + 1 }
+            : { ...prev, redResisted: prev.redResisted + 1 }
+        )
+
+        setMessage(color === 'blue' ? '놓쳤습니다.' : '좋습니다. 빨간색을 참았습니다.')
+
         if (color === 'blue') {
-          setStats(prev => ({
-            ...prev,
-            misses: prev.misses + 1,
-          }))
-
-          setMessage('놓쳤습니다.')
-
-          // 파란불만 라운드 카운트에 포함
           setRound(prev => prev + 1)
-        } else {
-          setStats(prev => ({
-            ...prev,
-            redResisted: prev.redResisted + 1,
-          }))
-
-          setMessage('좋습니다. 빨간색을 참았습니다.')
-
-          // 빨간불은 라운드 카운트에 포함하지 않음
         }
       }, settings.flashMs)
     }, settings.gapMs)
 
     return clearTimers
-  }, [
-    phase,
-    round,
-    roundCount,
-    settings.flashMs,
-    settings.gapMs,
-    settings.redRate,
-  ])
+  }, [phase, round, roundCount, settings.flashMs, settings.gapMs, settings.redRate])
 
   useEffect(() => {
     return () => clearTimers()
@@ -228,12 +191,10 @@ export default function App() {
     if (phase !== 'finished') return
 
     const previous = bestScores[recordKey]
-
     const shouldUpdate =
       !previous ||
       summary.score > previous.score ||
-      (summary.score === previous.score &&
-        summary.avgReaction < previous.avgReaction)
+      (summary.score === previous.score && summary.avgReaction < previous.avgReaction)
 
     if (!shouldUpdate) return
 
@@ -241,9 +202,7 @@ export default function App() {
       ...bestScores,
       [recordKey]: {
         score: summary.score,
-        avgReaction: Number.isFinite(summary.avgReaction)
-          ? Math.round(summary.avgReaction)
-          : null,
+        avgReaction: Number.isFinite(summary.avgReaction) ? Math.round(summary.avgReaction) : null,
         accuracy: summary.accuracy,
         grade: summary.grade,
         date: new Date().toISOString(),
@@ -252,16 +211,13 @@ export default function App() {
 
     setBestScores(updated)
     saveBestScores(updated)
-  }, [phase, bestScores, recordKey, summary])
+  }, [phase])
 
   function handleCellPress(index) {
     if (phase !== 'playing') return
 
     if (!active) {
-      setStats(prev => ({
-        ...prev,
-        earlyClicks: prev.earlyClicks + 1,
-      }))
+      setStats(prev => ({ ...prev, earlyClicks: prev.earlyClicks + 1 }))
       setMessage('불이 들어오기 전에 누르면 감점입니다.')
       return
     }
@@ -270,28 +226,16 @@ export default function App() {
     tokenRef.current = null
 
     if (active.color === 'red') {
-      setStats(prev => ({
-        ...prev,
-        falseClicks: prev.falseClicks + 1,
-      }))
-
+      setStats(prev => ({ ...prev, falseClicks: prev.falseClicks + 1 }))
       setMessage('빨간색을 눌렀습니다. 감점입니다.')
       setActive(null)
-
-      // 빨간불은 잘못 눌러도 라운드 카운트에 포함하지 않음
       return
     }
 
     if (index !== active.cell) {
-      setStats(prev => ({
-        ...prev,
-        misses: prev.misses + 1,
-      }))
-
+      setStats(prev => ({ ...prev, misses: prev.misses + 1 }))
       setMessage('다른 칸을 눌렀습니다.')
       setActive(null)
-
-      // 파란불이었으므로 라운드 카운트에 포함
       setRound(prev => prev + 1)
       return
     }
@@ -307,8 +251,6 @@ export default function App() {
 
     setMessage(`${Math.round(reaction)}ms`)
     setActive(null)
-
-    // 파란불 정답이므로 라운드 카운트에 포함
     setRound(prev => prev + 1)
   }
 
@@ -335,7 +277,6 @@ export default function App() {
 
       const index = keyMap[event.key.toLowerCase()]
       if (index === undefined) return
-
       handleCellPress(index)
     }
 
@@ -344,7 +285,9 @@ export default function App() {
   })
 
   async function copyResult() {
-    const text = `Quad Reflex ${settings.label} ${roundCount}R 결과: ${summary.score}점, 평균 ${formatMs(summary.avgReaction)}, 정확도 ${summary.accuracy}%, 등급 ${summary.grade}.`
+    const text = `Quad Reflex ${settings.label} ${roundCount}R 결과: ${summary.score}점, 평균 ${formatMs(
+      summary.avgReaction
+    )}, 정확도 ${summary.accuracy}%, 등급 ${summary.grade}.`
 
     try {
       await navigator.clipboard.writeText(text)
@@ -358,8 +301,12 @@ export default function App() {
   const currentBest = bestScores[recordKey]
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-white sm:px-6 lg:px-8">
-      <section className="mx-auto flex max-w-7xl flex-col gap-6">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400 shadow-2xl shadow-black/20">
+          광고 영역
+        </div>
+
         <header className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
           <div>
             <p className="mb-3 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
@@ -371,22 +318,21 @@ export default function App() {
             </h1>
 
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-              16칸 중 한 칸에 불이 들어옵니다. 파란색이면 즉시 누르고,
-              빨간색이면 누르지 마세요. 반응속도, 정확도, 충동 억제 점수를
-              함께 측정합니다.
+              16칸 중 한 칸에 불이 들어옵니다. 파란색이면 즉시 누르고, 빨간색이면 누르지 마세요.
+              반응속도, 정확도, 충동 억제 점수를 함께 측정합니다.
             </p>
           </div>
 
           <div className="grid gap-4 rounded-3xl border border-slate-800 bg-slate-900 p-4">
-            <ControlGroup title="목표 파란불 수">
+            <ControlGroup title="라운드">
               {ROUND_OPTIONS.map(count => (
                 <OptionButton
                   key={count}
                   active={roundCount === count}
                   disabled={phase === 'playing'}
                   onClick={() => phase !== 'playing' && setRoundCount(count)}
-                  title={`${count}회`}
-                  subtitle={count === 10 ? '짧은 테스트' : '정확한 측정'}
+                  title={`${count} 라운드`}
+                  subtitle={count === 10 ? '짧은 테스트' : count === 20 ? '기본 측정' : '정확한 측정'}
                   color="emerald"
                 />
               ))}
@@ -433,7 +379,7 @@ export default function App() {
             </div>
 
             <div className="mx-auto grid aspect-square w-full max-w-[500px] grid-cols-4 gap-2 rounded-[1.5rem] border border-slate-800 bg-slate-950 p-2 sm:gap-2.5 sm:p-3">
-              {Array.from({ length: 16 }, (_, index) => {
+              {Array.from({ length: 16 }, (_, index) => index).map(index => {
                 const isActive = active?.cell === index
                 const isBlue = isActive && active?.color === 'blue'
                 const isRed = isActive && active?.color === 'red'
@@ -486,19 +432,14 @@ export default function App() {
             <Panel title="개인 최고 기록">
               {currentBest ? (
                 <div className="mt-3 rounded-2xl bg-slate-950 p-4">
-                  <p className="text-3xl font-black text-white">
-                    {currentBest.score}점
-                  </p>
+                  <p className="text-3xl font-black text-white">{currentBest.score}점</p>
                   <p className="mt-2 text-sm text-slate-400">
-                    {settings.label} · {roundCount}회 · 평균{' '}
-                    {formatMs(currentBest.avgReaction)} · 정확도{' '}
-                    {currentBest.accuracy}% · 등급 {currentBest.grade}
+                    {settings.label} · {roundCount}라운드 · 평균 {formatMs(currentBest.avgReaction)} · 정확도 {currentBest.accuracy}% · 등급 {currentBest.grade}
                   </p>
                 </div>
               ) : (
                 <p className="mt-3 rounded-2xl bg-slate-950 p-4 text-sm text-slate-400">
-                  아직 기록이 없습니다. 한 판 플레이하면 이 브라우저에
-                  저장됩니다.
+                  아직 기록이 없습니다. 한 판 플레이하면 이 브라우저에 저장됩니다.
                 </p>
               )}
             </Panel>
@@ -507,7 +448,6 @@ export default function App() {
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 결과 문구를 복사해 친구에게 도전장을 보낼 수 있습니다.
               </p>
-
               <button
                 onClick={copyResult}
                 disabled={phase !== 'finished'}
@@ -524,12 +464,10 @@ export default function App() {
             title="게임 방법"
             body="파란색이 들어온 칸만 누르세요. 빨간색이 들어온 순간 누르면 감점됩니다. 한 번에 한 칸만 점등됩니다."
           />
-
           <InfoCard
             title="점수 기준"
-            body="정답, 평균 반응속도, 놓친 횟수, 빨간색 오클릭을 종합해 점수를 계산합니다. 10, 20, 30회는 기록이 따로 저장됩니다."
+            body="정답, 평균 반응속도, 놓친 횟수, 빨간색 오클릭을 종합해 점수를 계산합니다. 10, 20, 30라운드는 기록이 따로 저장됩니다."
           />
-
           <InfoCard
             title="보안 설계"
             body="사용자 입력 HTML을 렌더링하지 않고, 기록은 브라우저 localStorage에만 저장합니다. 서버 계정·비밀번호·개인정보를 받지 않는 구조입니다."
@@ -540,25 +478,18 @@ export default function App() {
           <h2 className="text-2xl font-black text-white">
             게이머와 격투기 수련자를 위한 반응 속도 훈련
           </h2>
-
           <p className="mt-3">
-            Quad Reflex는 게이머와 격투기 수련자들을 위한 16칸 반응속도
-            테스트입니다. 단순히 빠르게 누르는 것뿐 아니라, 빨간색 신호를
-            참는 집중력도 함께 측정합니다. 10회는 빠른 테스트용, 20회는 기본
-            측정용, 30회는 더 안정적인 기록 측정용입니다.
+            Quad Reflex는 게이머와 격투기 수련자들을 위한 16칸 반응속도 테스트입니다.
+            단순히 빠르게 누르는 것뿐 아니라, 빨간색 신호를 참는 집중력도 함께 측정합니다.
+            10라운드는 빠른 테스트용, 20라운드는 기본 측정용, 30라운드는 더 안정적인 기록 측정용입니다.
           </p>
-
           <p className="mt-3">
-            이 영역은 검색 유입을 위한 설명 콘텐츠로도 사용할 수 있습니다.
-            나중에 “FPS 반응속도 평균”, “마우스 반응속도 테스트”, “집중력
-            테스트” 같은 글을 추가하면 사이트 확장에 도움이 됩니다.
+            이 영역은 검색 유입을 위한 설명 콘텐츠로도 사용할 수 있습니다. 나중에 “FPS 반응속도 평균”,
+            “마우스 반응속도 테스트”, “집중력 테스트” 같은 글을 추가하면 사이트 확장에 도움이 됩니다.
           </p>
         </article>
 
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400">
-          빨간불은 진행 횟수에 포함되지 않습니다. 목표 파란불 수를 모두
-          처리하면 테스트가 종료됩니다.
-        </div>
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400"> </div>
 
         <footer className="pb-8 text-center text-xs text-slate-500">
           © {new Date().getFullYear()} Quad Reflex. All rights reserved.
@@ -571,20 +502,13 @@ export default function App() {
 function ControlGroup({ title, children }) {
   return (
     <div>
-      <p className="mb-2 text-sm font-bold text-slate-300">{title}</p>
-      <div className="grid grid-cols-3 gap-2">{children}</div>
+      <p className="text-sm font-semibold text-slate-300">{title}</p>
+      <div className="mt-3 grid grid-cols-2 gap-2">{children}</div>
     </div>
   )
 }
 
-function OptionButton({
-  active,
-  disabled,
-  onClick,
-  title,
-  subtitle,
-  color = 'cyan',
-}) {
+function OptionButton({ active, disabled, onClick, title, subtitle, color = 'cyan' }) {
   const activeClass =
     color === 'emerald'
       ? 'border-emerald-300 bg-emerald-300/15 text-emerald-100'
@@ -593,15 +517,12 @@ function OptionButton({
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
       className={`rounded-2xl border p-3 text-left transition ${
-        active
-          ? activeClass
-          : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-600'
+        active ? activeClass : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-600'
       } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
     >
-      <p className="text-sm font-black">{title}</p>
-      <p className="mt-1 text-xs opacity-70">{subtitle}</p>
+      <span className="block text-sm font-bold">{title}</span>
+      <span className="mt-1 block text-xs text-slate-400">{subtitle}</span>
     </button>
   )
 }
@@ -609,7 +530,7 @@ function OptionButton({
 function Panel({ title, children }) {
   return (
     <div className="rounded-3xl border border-slate-800 bg-slate-900 p-5">
-      <h2 className="text-lg font-black text-white">{title}</h2>
+      <p className="text-sm font-semibold text-slate-400">{title}</p>
       {children}
     </div>
   )
@@ -617,8 +538,8 @@ function Panel({ title, children }) {
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-2xl bg-slate-950 p-3">
-      <p className="text-xs text-slate-400">{label}</p>
+    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-3">
+      <p className="text-xs text-slate-500">{label}</p>
       <p className="mt-1 text-xl font-black text-white">{value}</p>
     </div>
   )
@@ -627,7 +548,7 @@ function Stat({ label, value }) {
 function InfoCard({ title, body }) {
   return (
     <div className="rounded-3xl border border-slate-800 bg-slate-900 p-5">
-      <h2 className="text-lg font-black text-white">{title}</h2>
+      <h3 className="text-lg font-black text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
     </div>
   )
