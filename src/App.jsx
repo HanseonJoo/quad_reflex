@@ -246,7 +246,7 @@ export default function App() {
 
         <article className="rounded-3xl border border-slate-800 bg-slate-900 p-6 leading-7 text-slate-300"><h2 className="text-2xl font-black text-white">게이머와 격투기 수련자를 위한 반응 속도 훈련</h2><p className="mt-3">Quad Reflex는 게이머와 격투기 수련자들을 위한 16칸 반응속도 테스트입니다. 단순히 빠르게 누르는 것뿐 아니라, 빨간색 신호를 참는 집중력도 함께 측정합니다. 10라운드는 빠른 테스트용, 20라운드는 기본 측정용, 30라운드는 더 안정적인 기록 측정용입니다.</p><p className="mt-3">이 영역은 검색 유입을 위한 설명 콘텐츠로도 사용할 수 있습니다. 나중에 “FPS 반응속도 평균”, “마우스 반응속도 테스트”, “집중력 테스트” 같은 글을 추가하면 사이트 확장에 도움이 됩니다.</p></article>
 
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400">광고 영역 · 하단 배너 위치입니다. 게임 조작 버튼과 붙이지 마세요.</div>
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400"> </div>
         <footer className="pb-8 text-center text-xs text-slate-500">© {new Date().getFullYear()} Quad Reflex. All rights reserved.</footer>
       </section>
     </main>
