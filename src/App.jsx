@@ -358,8 +358,6 @@ export default function App() {
           <aside className="flex flex-col gap-4">
             <Panel title="현재 결과">
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Stat label="점수" value={summary.score} />
-                <Stat label="등급" value={summary.grade} />
                 <Stat label="평균 반응" value={formatMs(summary.avgReaction)} />
                 <Stat label="최고 반응" value={formatMs(summary.bestReaction)} />
                 <Stat label="정확도" value={`${summary.accuracy}%`} />
