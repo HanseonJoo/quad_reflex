@@ -195,7 +195,7 @@ export default function App() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400 shadow-2xl shadow-black/20">
-          광고 영역 · AdSense 승인 후 광고 코드를 삽입하세요. 광고 클릭 유도 문구는 넣지 마세요.
+          
         </div>
 
         <header className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
