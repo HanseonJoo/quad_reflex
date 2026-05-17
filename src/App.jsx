@@ -7,10 +7,9 @@ const DIFFICULTIES = {
   pro: { label: 'Pro', description: '매우 빠름 · 고수용', flashMs: 470, gapMs: 190 },
 }
 
-const ROUND_OPTIONS = [10, 20, 30]
+const ROUND_OPTIONS = [20, 30, 40, 50]
 const STORAGE_KEY = 'quad-reflex-best-v1'
-const PLAYABLE_CELLS = [0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15]
-const REMOVED_CELLS = new Set([5, 6, 9, 10])
+const PLAYABLE_CELLS = [0, 1, 2, 3, 4,5,6 7, 8,9,10 11, 12, 13, 14, 15]
 
 function loadBestScores() {
   try {
