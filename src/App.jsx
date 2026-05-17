@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const DIFFICULTIES = {
-  easy: { label: 'Easy', description: '느린 속도 · 입문용', flashMs: 1100, gapMs: 360 },
+  easy: { label: 'Easy', description: '느리게 점등 · 입문용', flashMs: 1100, gapMs: 360 },
   normal: { label: 'Normal', description: '기본 속도 · 추천', flashMs: 850, gapMs: 300 },
   hard: { label: 'Hard', description: '빠른 점등 · 실전용', flashMs: 620, gapMs: 230 },
   pro: { label: 'Pro', description: '매우 빠름 · 고수용', flashMs: 470, gapMs: 190 },
@@ -9,7 +9,7 @@ const DIFFICULTIES = {
 
 const ROUND_OPTIONS = [20, 30, 40, 50]
 const STORAGE_KEY = 'quad-reflex-best-v1'
-const PLAYABLE_CELLS = [0, 1, 2, 3, 4,5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+const PLAYABLE_CELLS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 function loadBestScores() {
   try {
@@ -33,17 +33,19 @@ function formatMs(value) {
 function getGrade(score, avgReaction, errors, roundCount) {
   const normalized = score / roundCount
   const errorRate = errors / roundCount
+
   if (!Number.isFinite(avgReaction)) return '-'
   if (normalized >= 90 && avgReaction <= 360 && errorRate <= 0.08) return 'S'
   if (normalized >= 75 && avgReaction <= 430 && errorRate <= 0.15) return 'A'
   if (normalized >= 58 && avgReaction <= 520 && errorRate <= 0.24) return 'B'
   if (normalized >= 40) return 'C'
+
   return 'D'
 }
 
 export default function App() {
   const [difficulty, setDifficulty] = useState('normal')
-  const [roundCount, setRoundCount] = useState(10)
+  const [roundCount, setRoundCount] = useState(20)
   const [phase, setPhase] = useState('idle')
   const [round, setRound] = useState(0)
   const [active, setActive] = useState(null)
@@ -60,6 +62,7 @@ export default function App() {
   const showTimerRef = useRef(null)
   const expireTimerRef = useRef(null)
   const tokenRef = useRef(null)
+
   const settings = DIFFICULTIES[difficulty]
   const recordKey = `${difficulty}-${roundCount}`
 
@@ -67,6 +70,7 @@ export default function App() {
     const attempts = stats.correct + stats.misses
     const avgReaction = stats.correct ? stats.totalReaction / stats.correct : Infinity
     const accuracy = attempts ? Math.round((stats.correct / attempts) * 100) : 0
+
     const score = Math.max(
       0,
       stats.correct * 100 -
@@ -74,8 +78,17 @@ export default function App() {
         stats.earlyClicks * 10 -
         Math.max(0, Math.round((avgReaction - 300) / 8))
     )
+
     const grade = getGrade(score, avgReaction, stats.misses, roundCount)
-    return { attempts, avgReaction, accuracy, score, grade, bestReaction: stats.bestReaction }
+
+    return {
+      attempts,
+      avgReaction,
+      accuracy,
+      score,
+      grade,
+      bestReaction: stats.bestReaction,
+    }
   }, [stats, roundCount])
 
   function clearTimers() {
@@ -113,6 +126,7 @@ export default function App() {
 
   useEffect(() => {
     if (phase !== 'playing') return undefined
+
     if (round >= roundCount) {
       finishGame()
       return undefined
@@ -132,7 +146,10 @@ export default function App() {
 
         tokenRef.current = null
         setActive(null)
-        setStats(prev => ({ ...prev, misses: prev.misses + 1 }))
+        setStats(prev => ({
+          ...prev,
+          misses: prev.misses + 1,
+        }))
         setMessage('놓쳤습니다.')
         setRound(prev => prev + 1)
       }, settings.flashMs)
@@ -141,7 +158,9 @@ export default function App() {
     return clearTimers
   }, [phase, round, roundCount, settings.flashMs, settings.gapMs])
 
-  useEffect(() => () => clearTimers(), [])
+  useEffect(() => {
+    return () => clearTimers()
+  }, [])
 
   useEffect(() => {
     if (phase !== 'finished') return
@@ -167,14 +186,16 @@ export default function App() {
 
     setBestScores(updated)
     saveBestScores(updated)
-  }, [phase])
+  }, [phase, bestScores, recordKey, summary])
 
   function handleCellPress(index) {
     if (phase !== 'playing') return
-    if (REMOVED_CELLS.has(index)) return
 
     if (!active) {
-      setStats(prev => ({ ...prev, earlyClicks: prev.earlyClicks + 1 }))
+      setStats(prev => ({
+        ...prev,
+        earlyClicks: prev.earlyClicks + 1,
+      }))
       setMessage('불이 들어오기 전에 누르면 감점입니다.')
       return
     }
@@ -183,7 +204,10 @@ export default function App() {
     tokenRef.current = null
 
     if (index !== active.cell) {
-      setStats(prev => ({ ...prev, misses: prev.misses + 1 }))
+      setStats(prev => ({
+        ...prev,
+        misses: prev.misses + 1,
+      }))
       setMessage('다른 칸을 눌렀습니다.')
       setActive(null)
       setRound(prev => prev + 1)
@@ -212,8 +236,12 @@ export default function App() {
         '3': 2,
         '4': 3,
         q: 4,
+        w: 5,
+        e: 6,
         r: 7,
         a: 8,
+        s: 9,
+        d: 10,
         f: 11,
         z: 12,
         x: 13,
@@ -223,6 +251,7 @@ export default function App() {
 
       const index = keyMap[event.key.toLowerCase()]
       if (index === undefined) return
+
       handleCellPress(index)
     }
 
@@ -231,7 +260,9 @@ export default function App() {
   })
 
   async function copyResult() {
-    const text = `Quad Reflex ${settings.label} ${roundCount}R 결과: ${summary.score}점, 평균 ${formatMs(summary.avgReaction)}, 정확도 ${summary.accuracy}%, 등급 ${summary.grade}.`
+    const text = `Quad Reflex ${settings.label} ${roundCount}R 결과: ${summary.score}점, 평균 ${formatMs(
+      summary.avgReaction
+    )}, 정확도 ${summary.accuracy}%, 등급 ${summary.grade}.`
 
     try {
       await navigator.clipboard.writeText(text)
@@ -248,6 +279,7 @@ export default function App() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400 shadow-2xl shadow-black/20">
+          4x4 전체 칸 반응속도 테스트
         </div>
 
         <header className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
@@ -255,11 +287,14 @@ export default function App() {
             <p className="mb-3 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
               Gamer Reaction Test
             </p>
+
             <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl">
               Quad Reflex
             </h1>
+
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-              16칸 중 한 칸에 불이 들어옵니다. 불이 들어온 칸을 최대한 빠르게 누르며 반응속도와 정확도를 측정합니다.
+              16칸 중 한 칸에 불이 들어옵니다. 불이 들어온 칸을 최대한 빠르게 누르며
+              반응속도와 정확도를 측정합니다.
             </p>
           </div>
 
@@ -272,7 +307,7 @@ export default function App() {
                   disabled={phase === 'playing'}
                   onClick={() => phase !== 'playing' && setRoundCount(count)}
                   title={`${count} 라운드`}
-                  subtitle={count === 10 ? '짧은 테스트' : '정확한 측정'}
+                  subtitle={count === 20 ? '기본 테스트' : '정확한 측정'}
                   color="emerald"
                 />
               ))}
@@ -298,7 +333,9 @@ export default function App() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-slate-400">진행률</p>
-                <p className="text-xl font-bold text-white">{round}/{roundCount}</p>
+                <p className="text-xl font-bold text-white">
+                  {round}/{roundCount}
+                </p>
               </div>
 
               <div className="min-w-[180px] flex-1 rounded-full bg-slate-800 p-1 sm:max-w-xs">
@@ -317,11 +354,7 @@ export default function App() {
             </div>
 
             <div className="mx-auto grid aspect-square w-full max-w-[500px] grid-cols-4 gap-2 rounded-[1.5rem] border border-slate-800 bg-slate-950 p-2 sm:gap-2.5 sm:p-3">
-              {Array.from({ length: 16 }, (_, index) => index).map(index => {
-                if (REMOVED_CELLS.has(index)) {
-                  return <div key={index} aria-hidden="true" />
-                }
-
+              {Array.from({ length: 16 }, (_, index) => {
                 const isActive = active?.cell === index
 
                 return (
@@ -332,7 +365,7 @@ export default function App() {
                     className={`relative overflow-hidden rounded-xl border text-sm font-black transition duration-100 active:scale-[0.98] sm:rounded-2xl sm:text-xl ${
                       isActive
                         ? 'border-cyan-200 bg-cyan-400 text-cyan-950 shadow-[0_0_45px_rgba(34,211,238,0.75)]'
-                        : 'border-slate-700 bg-white text-slate-300 hover:bg-slate-100'
+                        : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
                     }`}
                   >
                     <span className="absolute left-2 top-1.5 text-[10px] font-bold opacity-35 sm:left-3 sm:top-2 sm:text-xs">
@@ -348,6 +381,7 @@ export default function App() {
               <p className="text-sm text-slate-400">상태</p>
               <p className="mt-1 text-xl font-black text-white">{message}</p>
               <p className="mt-2 text-xs text-slate-500">
+                키보드 입력: 1 2 3 4 / Q W E R / A S D F / Z X C V
               </p>
             </div>
           </div>
@@ -355,17 +389,35 @@ export default function App() {
           <aside className="flex flex-col gap-4">
             <Panel title="현재 결과">
               <div className="mt-4 grid grid-cols-2 gap-3">
+                <Stat label="점수" value={summary.score} />
+                <Stat label="등급" value={summary.grade} />
                 <Stat label="평균 반응" value={formatMs(summary.avgReaction)} />
                 <Stat label="최고 반응" value={formatMs(summary.bestReaction)} />
                 <Stat label="정확도" value={`${summary.accuracy}%`} />
                 <Stat label="성공" value={stats.correct} />
+                <Stat label="실패" value={stats.misses} />
+                <Stat label="성급 클릭" value={stats.earlyClicks} />
               </div>
+            </Panel>
+
+            <Panel title="최고 기록">
+              {currentBest ? (
+                <div className="mt-4 grid gap-2 text-sm text-slate-300">
+                  <p>점수: {currentBest.score}</p>
+                  <p>평균 반응: {formatMs(currentBest.avgReaction)}</p>
+                  <p>정확도: {currentBest.accuracy}%</p>
+                  <p>등급: {currentBest.grade}</p>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-400">아직 기록이 없습니다.</p>
+              )}
             </Panel>
 
             <Panel title="공유">
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 결과 문구를 복사해 친구에게 도전장을 보낼 수 있습니다.
               </p>
+
               <button
                 onClick={copyResult}
                 disabled={phase !== 'finished'}
@@ -382,21 +434,33 @@ export default function App() {
             title="게임 방법"
             body="불이 들어온 칸을 누르세요. 한 번에 한 칸만 점등됩니다."
           />
-    
-          
+
+          <InfoCard
+            title="감점 규칙"
+            body="틀린 칸을 누르거나 제한 시간 안에 누르지 못하면 실패로 기록됩니다. 불이 켜지기 전에 누르면 성급 클릭으로 감점됩니다."
+          />
+
+          <InfoCard
+            title="키보드 지원"
+            body="마우스나 터치 대신 1 2 3 4, Q W E R, A S D F, Z X C V 키로도 플레이할 수 있습니다."
+          />
         </section>
 
         <article className="rounded-3xl border border-slate-800 bg-slate-900 p-6 leading-7 text-slate-300">
           <h2 className="text-2xl font-black text-white">게이머 반응속도 테스트</h2>
+
           <p className="mt-3">
-            Quad Reflex는 게이머와 격투기 수련자를 위한 반응속도 훈련 프로그램입니다. 불이 들어온 칸을 빠르게 누르며 반응속도와 정확도를 측정합니다. 10라운드는 빠른 테스트용, 20라운드는 기본 측정용, 30라운드는 더 안정적인 기록 측정용입니다.
+            Quad Reflex는 게이머와 격투기 수련자를 위한 반응속도 훈련 프로그램입니다.
+            불이 들어온 칸을 빠르게 누르며 반응속도와 정확도를 측정합니다.
           </p>
+
           <p className="mt-3">
-           반응속도와 집중력 키우기 훈련
+            반응속도와 집중력 키우기 훈련에 사용할 수 있습니다.
           </p>
         </article>
 
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400">
+          가운데 4칸 포함, 총 16칸 전체가 활성화됩니다.
         </div>
 
         <footer className="pb-8 text-center text-xs text-slate-500">
@@ -425,6 +489,7 @@ function OptionButton({ active, disabled, onClick, title, subtitle, color = 'cya
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`rounded-2xl border p-3 text-left transition ${
         active ? activeClass : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-600'
       } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
