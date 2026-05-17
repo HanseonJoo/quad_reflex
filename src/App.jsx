@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 const DIFFICULTIES = {
-  easy: { label: 'Easy', description: '느리게 점등 · 입문용', flashMs: 1100, gapMs: 360 },
+  easy: { label: 'Easy', description: '느린 속도 · 입문용', flashMs: 1100, gapMs: 360 },
   normal: { label: 'Normal', description: '기본 속도 · 추천', flashMs: 850, gapMs: 300 },
   hard: { label: 'Hard', description: '빠른 점등 · 실전용', flashMs: 620, gapMs: 230 },
   pro: { label: 'Pro', description: '매우 빠름 · 고수용', flashMs: 470, gapMs: 190 },
