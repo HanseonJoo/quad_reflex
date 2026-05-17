@@ -9,7 +9,7 @@ const DIFFICULTIES = {
 
 const ROUND_OPTIONS = [20, 30, 40, 50]
 const STORAGE_KEY = 'quad-reflex-best-v1'
-const PLAYABLE_CELLS = [0, 1, 2, 3, 4,5,6 7, 8,9,10 11, 12, 13, 14, 15]
+const PLAYABLE_CELLS = [0, 1, 2, 3, 4,5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 function loadBestScores() {
   try {
