@@ -279,7 +279,6 @@ export default function App() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400 shadow-2xl shadow-black/20">
-          4x4 전체 칸 반응속도 테스트
         </div>
 
         <header className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
@@ -389,14 +388,11 @@ export default function App() {
           <aside className="flex flex-col gap-4">
             <Panel title="현재 결과">
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Stat label="점수" value={summary.score} />
-                <Stat label="등급" value={summary.grade} />
                 <Stat label="평균 반응" value={formatMs(summary.avgReaction)} />
                 <Stat label="최고 반응" value={formatMs(summary.bestReaction)} />
                 <Stat label="정확도" value={`${summary.accuracy}%`} />
                 <Stat label="성공" value={stats.correct} />
                 <Stat label="실패" value={stats.misses} />
-                <Stat label="성급 클릭" value={stats.earlyClicks} />
               </div>
             </Panel>
 
@@ -432,17 +428,7 @@ export default function App() {
         <section className="grid gap-4 lg:grid-cols-3">
           <InfoCard
             title="게임 방법"
-            body="불이 들어온 칸을 누르세요. 한 번에 한 칸만 점등됩니다."
-          />
-
-          <InfoCard
-            title="감점 규칙"
-            body="틀린 칸을 누르거나 제한 시간 안에 누르지 못하면 실패로 기록됩니다. 불이 켜지기 전에 누르면 성급 클릭으로 감점됩니다."
-          />
-
-          <InfoCard
-            title="키보드 지원"
-            body="마우스나 터치 대신 1 2 3 4, Q W E R, A S D F, Z X C V 키로도 플레이할 수 있습니다."
+            body="불이 들어온 칸을 누르세요."
           />
         </section>
 
@@ -460,7 +446,6 @@ export default function App() {
         </article>
 
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400">
-          가운데 4칸 포함, 총 16칸 전체가 활성화됩니다.
         </div>
 
         <footer className="pb-8 text-center text-xs text-slate-500">
