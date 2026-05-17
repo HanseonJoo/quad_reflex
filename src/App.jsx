@@ -259,7 +259,7 @@ export default function App() {
               Quad Reflex
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-              12칸 중 한 칸에 불이 들어옵니다. 불이 들어온 칸을 최대한 빠르게 누르며 반응속도와 정확도를 측정합니다.
+              16칸 중 한 칸에 불이 들어옵니다. 불이 들어온 칸을 최대한 빠르게 누르며 반응속도와 정확도를 측정합니다.
             </p>
           </div>
 
