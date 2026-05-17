@@ -249,7 +249,6 @@ export default function App() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400 shadow-2xl shadow-black/20">
-          광고 영역 · AdSense 승인 후 광고 코드를 삽입하세요.
         </div>
 
         <header className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
@@ -350,7 +349,6 @@ export default function App() {
               <p className="text-sm text-slate-400">상태</p>
               <p className="mt-1 text-xl font-black text-white">{message}</p>
               <p className="mt-2 text-xs text-slate-500">
-                키보드 1~4, Q/R, A/F, ZXCV로도 플레이할 수 있습니다.
               </p>
             </div>
           </div>
@@ -362,23 +360,7 @@ export default function App() {
                 <Stat label="최고 반응" value={formatMs(summary.bestReaction)} />
                 <Stat label="정확도" value={`${summary.accuracy}%`} />
                 <Stat label="성공" value={stats.correct} />
-                <Stat label="놓침" value={stats.misses} />
               </div>
-            </Panel>
-
-            <Panel title="개인 최고 기록">
-              {currentBest ? (
-                <div className="mt-3 rounded-2xl bg-slate-950 p-4">
-                  <p className="text-3xl font-black text-white">{currentBest.score}점</p>
-                  <p className="mt-2 text-sm text-slate-400">
-                    {settings.label} · {roundCount}라운드 · 평균 {formatMs(currentBest.avgReaction)} · 정확도 {currentBest.accuracy}% · 등급 {currentBest.grade}
-                  </p>
-                </div>
-              ) : (
-                <p className="mt-3 rounded-2xl bg-slate-950 p-4 text-sm text-slate-400">
-                  아직 기록이 없습니다. 한 판 플레이하면 이 브라우저에 저장됩니다.
-                </p>
-              )}
             </Panel>
 
             <Panel title="공유">
@@ -422,7 +404,6 @@ export default function App() {
         </article>
 
         <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 text-center text-sm text-slate-400">
-          광고 영역 · 하단 배너 위치입니다.
         </div>
 
         <footer className="pb-8 text-center text-xs text-slate-500">
